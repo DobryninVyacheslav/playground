@@ -3,11 +3,16 @@ package com.playground.mongodb
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.data.mongodb.core.MongoTemplate
 
 @SpringBootApplication
-class MongoApplication : CommandLineRunner {
+class MongoApplication(private val mongoTemplate: MongoTemplate) : CommandLineRunner {
+    /**
+     * Play here
+     */
     override fun run(vararg args: String) {
-        TODO("Not yet implemented")
+        val result = mongoTemplate.collectionNames
+        println(result)
     }
 }
 
