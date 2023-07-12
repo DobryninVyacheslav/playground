@@ -1,5 +1,6 @@
 rootProject.name = "playground"
-include("mongodb")
 include("lucene")
+include("mongodb")
 include("opennlp")
+include("spring:web")
 include("unsafe")
