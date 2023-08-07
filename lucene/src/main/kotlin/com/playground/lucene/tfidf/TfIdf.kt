@@ -4,18 +4,23 @@ import com.playground.lucene.Indexer
 import com.playground.lucene.Searcher
 import com.playground.lucene.analyze
 import com.playground.lucene.loadDocuments
+import com.playground.lucene.writeToFile
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.FieldType
 import org.apache.lucene.document.StringField
+import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.index.IndexOptions
 import org.apache.lucene.index.Term
+import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.MatchAllDocsQuery
+import org.apache.lucene.search.ScoreDoc
 import org.apache.lucene.store.Directory
 import org.apache.lucene.store.FSDirectory
 import org.apache.lucene.util.BytesRef
 import java.nio.file.Paths
+import kotlin.system.measureTimeMillis
 import com.playground.lucene.Document as CustomDocument
 
 private const val ID_FIELD = "id"
@@ -24,6 +29,7 @@ private const val MAX_SCORE = 15.438689
 private var currentMaxScore = Float.MIN_VALUE
 private const val THRESHOLD_VALUE = 0.1
 private val analyzer = StandardAnalyzer()
+private const val OUTPUT_FILE = "/Users/dobrynin/Desktop/preprocessed-collection.tsv"
 
 fun main(args: Array<String>) {
     val documents = loadDocuments(args.first())
@@ -34,11 +40,13 @@ fun main(args: Array<String>) {
     val indexPath = Paths.get("lucene/index")
     val directory = FSDirectory.open(indexPath)
 
-    directory.index(documents)
-    // val searchTime = measureTimeMillis { directory.search() }
+    val executionTime = measureTimeMillis {
+        // directory.index(documents)
+        directory.preprocessAndWriteToFile()
+    }
 
     println("MAX_SCORE=$MAX_SCORE, currentMaxScore=$currentMaxScore")
-    // println("Search time: $searchTime ms")
+    println("Execution time: $executionTime ms")
     // vocabulary.keys
     //     .asSequence()
     //     .filter { it.isNotBlank() }
@@ -72,35 +80,47 @@ fun Directory.index(documents: Sequence<CustomDocument>): Unit = Indexer(this, S
     indexer.optimize()
 }
 
-fun Directory.search() = Searcher(this).use { searcher ->
+fun Directory.preprocessAndWriteToFile() = Searcher(this).use { searcher ->
     searcher.search { reader ->
         // this.similarity = ClassicSimilarity()
-        searcher.searchAll(MatchAllDocsQuery()).forEach { scoreDoc ->
-            val content = storedFields().document(scoreDoc.doc)[CONTENT_FIELD]
-            val iterator = reader.termVectors()[scoreDoc.doc, CONTENT_FIELD].iterator()
-            val belowThresholdTokens = mutableSetOf<String>()
-            var bytesRef: BytesRef?
-            val joinedTerms = StringBuilder()
-            while (iterator.next().also { bytesRef = it } != null) {
-                val term = Term(CONTENT_FIELD, bytesRef)
-                val termFreq = iterator.totalTermFreq()
-                val docCount = iterator.docFreq()
-                val score = similarity.scorer(
-                    1f,
-                    collectionStatistics(CONTENT_FIELD),
-                    termStatistics(term, reader.docFreq(term), reader.totalTermFreq(term))
-                ).score(termFreq.toFloat(), 1) // ).score(reader.totalTermFreq(term).toFloat(), 1)
-                val normalizedScore = score / MAX_SCORE
-                if (normalizedScore < THRESHOLD_VALUE) {
-                    belowThresholdTokens += term.text()
-                    println("term: ${term.text()}, termFreq=$termFreq, docCount=$docCount, score=$normalizedScore")
-                }
-                joinedTerms.append(term.text()).append(" ")
-                if (score > currentMaxScore) currentMaxScore = score
+        writeToFile(OUTPUT_FILE) { writer ->
+            searcher.searchAll(MatchAllDocsQuery()).forEach { scoreDoc ->
+                val (id, content) = preprocessDocument(reader, scoreDoc)
+                writer.appendLine("$id\t$content")
             }
-            val filteredContent = (analyzer.analyze(content) - belowThresholdTokens).joinToString(" ")
-            println("content=$content,\njoinedTerms=$joinedTerms,\nfilteredContent=$filteredContent")
-            println()
         }
     }
+}
+
+private fun IndexSearcher.preprocessDocument(
+    reader: DirectoryReader,
+    scoreDoc: ScoreDoc
+): CustomDocument {
+    val document = storedFields().document(scoreDoc.doc)
+    val content = document[CONTENT_FIELD]
+    val iterator = reader.termVectors()[scoreDoc.doc, CONTENT_FIELD].iterator()
+    val belowThresholdTokens = mutableSetOf<String>()
+    var bytesRef: BytesRef?
+    val joinedTerms = StringBuilder()
+    while (iterator.next().also { bytesRef = it } != null) {
+        val term = Term(CONTENT_FIELD, bytesRef)
+        val termFreq = iterator.totalTermFreq()
+        val docCount = iterator.docFreq()
+        val score = similarity.scorer(
+            1f,
+            collectionStatistics(CONTENT_FIELD),
+            termStatistics(term, reader.docFreq(term), reader.totalTermFreq(term))
+        ).score(termFreq.toFloat(), 1) // ).score(reader.totalTermFreq(term).toFloat(), 1)
+        val normalizedScore = score / MAX_SCORE
+        if (normalizedScore < THRESHOLD_VALUE) {
+            belowThresholdTokens += term.text()
+            println("term: ${term.text()}, termFreq=$termFreq, docCount=$docCount, score=$normalizedScore")
+        }
+        joinedTerms.append(term.text()).append(" ")
+        if (score > currentMaxScore) currentMaxScore = score
+    }
+    val filteredContent = (analyzer.analyze(content) - belowThresholdTokens).joinToString(" ")
+    println("content=$content,\njoinedTerms=$joinedTerms,\nfilteredContent=$filteredContent")
+    println()
+    return CustomDocument(document[ID_FIELD], filteredContent)
 }
