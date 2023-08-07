@@ -2,6 +2,7 @@ package com.playground.lucene.tfidf
 
 import com.playground.lucene.Indexer
 import com.playground.lucene.Searcher
+import com.playground.lucene.analyze
 import com.playground.lucene.loadDocuments
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
@@ -20,6 +21,7 @@ private const val FIELD_NAME = "content"
 private const val MAX_SCORE = 15.438689
 private var currentMaxScore = Float.MIN_VALUE
 private const val THRESHOLD_VALUE = 0.1
+private val analyzer = StandardAnalyzer()
 
 fun main(args: Array<String>) {
     val documents = loadDocuments(args.first())
@@ -91,7 +93,7 @@ fun Directory.search() = Searcher(this).use { searcher ->
                 joinedTerms.append(term.text()).append(" ")
                 if (score > currentMaxScore) currentMaxScore = score
             }
-            val filteredContent = (content.lowercase().split(" ") - belowThresholdTokens).joinToString(" ")
+            val filteredContent = (analyzer.analyze(content) - belowThresholdTokens).joinToString(" ")
             println("content=$content,\njoinedTerms=$joinedTerms,\nfilteredContent=$filteredContent")
             println()
         }
