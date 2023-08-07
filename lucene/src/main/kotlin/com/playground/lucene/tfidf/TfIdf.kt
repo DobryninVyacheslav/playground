@@ -3,7 +3,6 @@ package com.playground.lucene.tfidf
 import com.playground.lucene.Indexer
 import com.playground.lucene.Searcher
 import com.playground.lucene.loadDocuments
-import com.playground.lucene.searchAll
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
@@ -66,7 +65,7 @@ fun Directory.index(documents: Sequence<String>): Unit = Indexer(this, StandardA
 fun Directory.search() = Searcher(this).use { searcher ->
     searcher.search { reader ->
         // this.similarity = ClassicSimilarity()
-        this.searchAll(MatchAllDocsQuery()).forEach { scoreDoc ->
+        searcher.searchAll(MatchAllDocsQuery()).forEach { scoreDoc ->
             val content = storedFields().document(scoreDoc.doc)[FIELD_NAME]
             val thresholdValue = 0.1
             val iterator = reader.termVectors()[scoreDoc.doc, FIELD_NAME].iterator()
