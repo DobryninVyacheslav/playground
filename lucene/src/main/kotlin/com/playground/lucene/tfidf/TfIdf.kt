@@ -14,6 +14,7 @@ import org.apache.lucene.store.Directory
 import org.apache.lucene.store.FSDirectory
 import org.apache.lucene.util.BytesRef
 import java.nio.file.Paths
+import kotlin.system.measureTimeMillis
 
 private const val FIELD_NAME = "content"
 private const val MAX_SCORE = 15.438689
@@ -30,9 +31,10 @@ fun main(args: Array<String>) {
     val directory = FSDirectory.open(indexPath)
 
     // directory.index(documents)
-    directory.search()
+    val searchTime = measureTimeMillis { directory.search() }
 
     println("MAX_SCORE=$MAX_SCORE, currentMaxScore=$currentMaxScore")
+    println("Search time: $searchTime ms")
     // vocabulary.keys
     //     .asSequence()
     //     .filter { it.isNotBlank() }
