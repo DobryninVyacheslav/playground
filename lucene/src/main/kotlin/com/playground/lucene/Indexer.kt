@@ -7,9 +7,13 @@ import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.store.Directory
 import java.io.Closeable
 
-class Indexer(indexDirectory: Directory, analyzer: StandardAnalyzer) : Closeable {
+class Indexer(
+    indexDirectory: Directory,
+    analyzer: StandardAnalyzer,
+    writerConfigUpdater: IndexWriterConfig.() -> Unit = {}
+) : Closeable {
 
-    private val indexWriterConfig = IndexWriterConfig(analyzer)
+    private val indexWriterConfig = IndexWriterConfig(analyzer).apply { writerConfigUpdater() }
     private val writer = IndexWriter(indexDirectory, indexWriterConfig)
 
     fun index(document: Document) {

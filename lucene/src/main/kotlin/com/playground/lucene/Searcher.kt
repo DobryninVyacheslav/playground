@@ -17,6 +17,10 @@ class Searcher(indexDirectory: Directory) : Closeable {
     private val indexReader = DirectoryReader.open(indexDirectory)
     private val searcher = IndexSearcher(indexReader)
 
+    fun <T> search(action: IndexSearcher.(DirectoryReader) -> T): T {
+        return searcher.action(indexReader)
+    }
+
     fun search(inField: String, queryString: String) {
         val query = SortedDocValuesField.newSlowExactQuery(inField, BytesRef(queryString))
         var topDocs: TopDocs = searcher.search(query, 10)
