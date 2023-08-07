@@ -17,7 +17,7 @@ class Searcher(indexDirectory: Directory) : Closeable {
     private val indexReader = DirectoryReader.open(indexDirectory)
     private val searcher = IndexSearcher(indexReader)
 
-    fun <T> search(action: IndexSearcher.(DirectoryReader) -> T): T {
+    fun <T> withSearcherAndReader(action: IndexSearcher.(DirectoryReader) -> T): T {
         return searcher.action(indexReader)
     }
 

@@ -81,7 +81,7 @@ fun Directory.index(documents: Sequence<CustomDocument>): Unit = Indexer(this, S
 }
 
 fun Directory.preprocessAndWriteToFile() = Searcher(this).use { searcher ->
-    searcher.search { reader ->
+    searcher.withSearcherAndReader { reader ->
         // this.similarity = ClassicSimilarity()
         writeToFile(OUTPUT_FILE) { writer ->
             searcher.searchAll(MatchAllDocsQuery()).forEach { scoreDoc ->
