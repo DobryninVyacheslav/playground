@@ -12,6 +12,17 @@ import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
 fun main(args: Array<String>) {
+    prepareQrelsAndQueriesForCollection(
+        collectionPath = "/Users/dobrynin/Desktop/preprocessed-collection.tsv",
+        qrelsPath = "/Users/dobrynin/Documents/ITMO/Datasets/MSMARCO/qrels.dev.small.tsv",
+        qrelsOutPath = "/Users/dobrynin/Desktop/qrels.preprocessed.500k.tsv",
+        queriesPath = "/Users/dobrynin/Documents/ITMO/Datasets/MSMARCO/queries.dev.small.tsv",
+        queriesOutPath = "/Users/dobrynin/Desktop/queries.preprocessed.500k.tsv",
+    )
+    // indexAndSearch()
+}
+
+private fun indexAndSearch() {
     val indexPath = Paths.get("lucene/src/main/resources/index")
     val directory = FSDirectory.open(indexPath)
 

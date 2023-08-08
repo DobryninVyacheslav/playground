@@ -20,3 +20,32 @@ fun loadDocuments(filePath: String, count: Int? = null): Sequence<Document> = Fi
     }
 
 data class Document(val id: String, val content: String)
+
+fun prepareQrelsAndQueriesForCollection(
+    collectionPath: String,
+    qrelsPath: String,
+    qrelsOutPath: String,
+    queriesPath: String,
+    queriesOutPath: String,
+    firstDocumentNumber: Int = 500_000,
+) {
+    // get docIds for firstDocumentNumber documents
+    val docIds: Set<Int> = File(collectionPath).bufferedReader()
+        .lineSequence()
+        .take(firstDocumentNumber)
+        .mapTo(mutableSetOf()) { it.split("\t").first().toInt() }
+    // filter qrels by docIds
+    val qrelsLines = File(qrelsPath).bufferedReader()
+        .lineSequence()
+        .filterTo(mutableSetOf()) { it.split("\t")[2].toInt() in docIds }
+    // save qrels
+    File(qrelsOutPath).bufferedWriter().use { file -> qrelsLines.forEach { file.appendLine(it) } }
+    // filter queries by qrels
+    val qIds = qrelsLines.map { it.split("\t").first() }
+        .mapTo(mutableSetOf()) { it.toInt() }
+    val queriesLines = File(queriesPath).bufferedReader()
+        .lineSequence()
+        .filterTo(mutableSetOf()) { it.split("\t").first().toInt() in qIds }
+    // save queries
+    File(queriesOutPath).bufferedWriter().use { file -> queriesLines.forEach { file.appendLine(it) } }
+}
