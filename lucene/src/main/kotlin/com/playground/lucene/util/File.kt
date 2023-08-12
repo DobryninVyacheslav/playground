@@ -1,4 +1,4 @@
-package com.playground.lucene
+package com.playground.lucene.util
 
 import java.io.BufferedWriter
 import java.io.File
