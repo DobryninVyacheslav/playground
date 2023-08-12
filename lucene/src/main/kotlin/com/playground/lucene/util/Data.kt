@@ -49,3 +49,14 @@ fun prepareQrelsAndQueriesForCollection(
     // save queries
     File(queriesOutPath).bufferedWriter().use { file -> queriesLines.forEach { file.appendLine(it) } }
 }
+
+fun saveFilteredByIds(
+    collectionPath: String,
+    collectionOutPath: String,
+    ids: Set<Int>,
+) {
+    val filteredDocs = File(collectionPath).bufferedReader()
+        .lineSequence()
+        .filter { it.split("\t").first().toInt() in ids }
+    File(collectionOutPath).bufferedWriter().use { file -> filteredDocs.forEach { file.appendLine(it) } }
+}
